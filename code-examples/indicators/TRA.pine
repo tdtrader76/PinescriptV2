@@ -1,0 +1,31 @@
+//@version=6
+indicator("5Davg & 20Davg", shorttitle="5D&20Davg", overlay=true)
+
+// Función para obtener datos diarios independientemente del timeframe
+daily_high = request.security(syminfo.tickerid, "1D", high, lookahead=barmerge.lookahead_off)
+daily_low = request.security(syminfo.tickerid, "1D", low, lookahead=barmerge.lookahead_off)
+
+// Calcular el rango diario (high - low)
+daily_range = daily_high - daily_low
+prev_daily_range = daily_range[1]
+
+// Calcular la media de los rangos de los últimos 5 y 20 días
+range_5day_avg = ta.sma(daily_range, 5)
+range_20day_avg = ta.sma(daily_range, 20)
+
+// Crear la tabla
+var info_table = table.new(position.bottom_right, 2, 3, bgcolor = color.new(color.black, 80), border_width = 1, border_color = color.new(color.white, 50))
+
+// Actualizar la tabla en cada barra
+if barstate.islast
+    // Fila para 5Davg
+    table.cell(info_table, 0, 0, "5Davg:", text_color=color.white, text_size=size.normal)
+    table.cell(info_table, 1, 0, str.tostring(range_5day_avg, "#.##"), text_color=color.white, text_size=size.normal)
+    
+    // Fila para 20Davg
+    table.cell(info_table, 0, 1, "20Davg:", text_color=color.white, text_size=size.normal)
+    table.cell(info_table, 1, 1, str.tostring(range_20day_avg, "#.##"), text_color=color.white, text_size=size.normal)
+    
+    // Fila para Rango Día Anterior
+    table.cell(info_table, 0, 2, "Prev Day Range:", text_color=color.white, text_size=size.normal)
+    table.cell(info_table, 1, 2, str.tostring(prev_daily_range, "#.##"), text_color=color.white, text_size=size.normal)
