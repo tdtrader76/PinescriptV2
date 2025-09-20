@@ -170,4 +170,167 @@ precio_plot = plot(fuente_datos,
 
 // Área de relleno entre precio e indicador
 fill(precio_plot, linea_principal_plot, 
-     color=mostrar_area ? color.new(color_linea_principal, transparencia_area) : na
+     color=mostrar_area ? color.new(color_linea_principal, transparencia_area) : na,
+     title="Área de Relleno")
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// 🎯 VISUALIZACIÓN DE SEÑALES
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+// Señales de compra (triángulos verdes hacia arriba)
+plotshape(activar_señales and señal_compra_filtrada, 
+          title="Señal de Compra", 
+          location=location.belowbar, 
+          color=color.green, 
+          style=shape.triangleup, 
+          size=size.small,
+          text="COMPRA")
+
+// Señales de venta (triángulos rojos hacia abajo)
+plotshape(activar_señales and señal_venta_filtrada, 
+          title="Señal de Venta", 
+          location=location.abovebar, 
+          color=color.red, 
+          style=shape.triangledown, 
+          size=size.small,
+          text="VENTA")
+
+// Señales secundarias (círculos más pequeños)
+plotshape(activar_señales and señal_compra_secundaria and not señal_compra_filtrada, 
+          title="Señal Secundaria Compra", 
+          location=location.belowbar, 
+          color=color.new(color.green, 50), 
+          style=shape.circle, 
+          size=size.tiny)
+
+plotshape(activar_señales and señal_venta_secundaria and not señal_venta_filtrada, 
+          title="Señal Secundaria Venta", 
+          location=location.abovebar, 
+          color=color.new(color.red, 50), 
+          style=shape.circle, 
+          size=size.tiny)
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// 📊 INFORMACIÓN EN TABLA (OPCIONAL)
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+// Crear tabla de información (esquina superior derecha)
+var table tabla_info = table.new(position.top_right, 2, 6, bgcolor=color.white, border_width=1)
+
+// Actualizar tabla en la última barra
+if barstate.islast
+    // Título
+    table.cell(tabla_info, 0, 0, "INDICADOR", text_color=color.black, text_size=size.small, bgcolor=color.gray)
+    table.cell(tabla_info, 1, 0, "VALOR", text_color=color.black, text_size=size.small, bgcolor=color.gray)
+    
+    // Valores actuales
+    table.cell(tabla_info, 0, 1, "Precio Actual", text_color=color.black, text_size=size.small)
+    table.cell(tabla_info, 1, 1, str.tostring(fuente_datos, "#.##"), text_color=color.black, text_size=size.small)
+    
+    table.cell(tabla_info, 0, 2, tipo_calculo + "(" + str.tostring(periodo_principal) + ")", text_color=color.black, text_size=size.small)
+    table.cell(tabla_info, 1, 2, str.tostring(indicador_principal, "#.##"), text_color=color.black, text_size=size.small)
+    
+    table.cell(tabla_info, 0, 3, "Línea Señal", text_color=color.black, text_size=size.small)
+    table.cell(tabla_info, 1, 3, str.tostring(linea_señal, "#.##"), text_color=color.black, text_size=size.small)
+    
+    table.cell(tabla_info, 0, 4, "Distancia %", text_color=color.black, text_size=size.small)
+    table.cell(tabla_info, 1, 4, str.tostring(distancia_precio, "#.##") + "%", 
+               text_color=distancia_precio > 0 ? color.green : color.red, text_size=size.small)
+    
+    // Estado de tendencia
+    estado_tendencia = indicador_principal > indicador_principal[1] ? "ALCISTA ⬆" : "BAJISTA ⬇"
+    color_tendencia = indicador_principal > indicador_principal[1] ? color.green : color.red
+    table.cell(tabla_info, 0, 5, "Tendencia", text_color=color.black, text_size=size.small)
+    table.cell(tabla_info, 1, 5, estado_tendencia, text_color=color_tendencia, text_size=size.small)
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// 📢 SISTEMA DE ALERTAS
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+// Alertas principales (señales filtradas)
+alertcondition(activar_alertas and señal_compra_filtrada, 
+               title="🟢 Señal de Compra Filtrada", 
+               message="🟢 COMPRA en {{ticker}} | Precio: {{close}} | Indicador: " + str.tostring(indicador_principal, "#.##") + " | Timeframe: {{interval}}")
+
+alertcondition(activar_alertas and señal_venta_filtrada, 
+               title="🔴 Señal de Venta Filtrada", 
+               message="🔴 VENTA en {{ticker}} | Precio: {{close}} | Indicador: " + str.tostring(indicador_principal, "#.##") + " | Timeframe: {{interval}}")
+
+// Alertas secundarias
+alertcondition(activar_alertas and señal_compra_secundaria, 
+               title="🟡 Señal Secundaria Compra", 
+               message="🟡 Señal Secundaria COMPRA en {{ticker}} | Precio: {{close}} | Timeframe: {{interval}}")
+
+alertcondition(activar_alertas and señal_venta_secundaria, 
+               title="🟡 Señal Secundaria Venta", 
+               message="🟡 Señal Secundaria VENTA en {{ticker}} | Precio: {{close}} | Timeframe: {{interval}}")
+
+// Alerta de cambio de tendencia
+cambio_tendencia_alcista = indicador_principal > indicador_principal[1] and indicador_principal[1] <= indicador_principal[2]
+cambio_tendencia_bajista = indicador_principal < indicador_principal[1] and indicador_principal[1] >= indicador_principal[2]
+
+alertcondition(activar_alertas and cambio_tendencia_alcista, 
+               title="📈 Cambio a Tendencia Alcista", 
+               message="📈 Cambio a TENDENCIA ALCISTA en {{ticker}} | Precio: {{close}} | Timeframe: {{interval}}")
+
+alertcondition(activar_alertas and cambio_tendencia_bajista, 
+               title="📉 Cambio a Tendencia Bajista", 
+               message="📉 Cambio a TENDENCIA BAJISTA en {{ticker}} | Precio: {{close}} | Timeframe: {{interval}}")
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// 🔧 FUNCIONES DE UTILIDAD ADICIONALES
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+// Función para exportar datos (para análisis externos)
+exportarDatos() =>
+    datos = map.new<string, float>()
+    map.put(datos, "precio", fuente_datos)
+    map.put(datos, "indicador_principal", indicador_principal)
+    map.put(datos, "linea_señal", linea_señal)
+    map.put(datos, "distancia_porcentaje", distancia_precio)
+    map.put(datos, "volumen", volume)
+    datos
+
+// Función para calcular estadísticas
+calcularEstadisticas(serie, periodo) =>
+    media = ta.sma(serie, periodo)
+    desviacion = ta.stdev(serie, periodo)
+    minimo = ta.lowest(serie, periodo)
+    maximo = ta.highest(serie, periodo)
+    [media, desviacion, minimo, maximo]
+
+// Calcular estadísticas del indicador (últimas 50 barras)
+[media_indicador, std_indicador, min_indicador, max_indicador] = calcularEstadisticas(indicador_principal, 50)
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// 📝 COMENTARIOS FINALES Y NOTAS DE USO
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+// 📋 INSTRUCCIONES DE USO:
+// 1. Ajusta el "Período Principal" según tu estilo de trading (valores típicos: 14, 20, 50)
+// 2. Selecciona la "Fuente de Datos" apropiada (close es la más común)
+// 3. Experimenta con diferentes "Tipos de Cálculo" para ver cuál funciona mejor
+// 4. Activa las señales para ver puntos de entrada/salida potenciales
+// 5. Usa las alertas para recibir notificaciones en tiempo real
+
+// ⚠️ ADVERTENCIAS:
+// - Este es un template educativo, no constituye asesoramiento financiero
+// - Siempre realiza backtesting antes de usar en trading real
+// - Las señales pueden generar falsas alarmas en mercados laterales
+// - Combina con otros indicadores para confirmar señales
+
+// 🔄 PERSONALIZACIÓN:
+// - Modifica los cálculos en la sección "CÁLCULOS PRINCIPALES"
+// - Ajusta los colores y estilos en "VISUALIZACIÓN"
+// - Añade nuevos parámetros en "CONFIGURACIÓN Y PARÁMETROS"
+// - Crea nuevas condiciones de señales en "DETECCIÓN DE SEÑALES"
+
+// 📊 MÉTRICAS DE RENDIMIENTO:
+// - El indicador se recalcula en cada barra nueva
+// - Optimizado para usar mínimos recursos computacionales
+// - Compatible con todos los timeframes de TradingView
+// - Funciona con cualquier instrumento financiero
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// FIN DEL TEMPLATE - ¡PERSONALIZA SEGÚN TUS NECESIDADES!
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
