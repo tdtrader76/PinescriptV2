@@ -134,18 +134,19 @@ if use_automatic_date
         clearDrawings(manual_lines, manual_labels)
 
     [prev_day_time, prev_day_high, prev_day_low, prev_day_open, prev_day_close] = request.security(syminfo.tickerid, "D", [time[1], high[1], low[1], open[1], close[1]], lookahead=barmerge.lookahead_on)
+    [current_day_open] = request.security(syminfo.tickerid, "D", [open], lookahead=barmerge.lookahead_on)
     is_new_day = na(dayofmonth[1]) or dayofmonth != dayofmonth[1]
 
     if is_new_day
         clearDrawings(auto_lines, auto_labels)
         float initial_range = prev_day_high - prev_day_low
-        float gap = gap_mode == "Automatic" ? math.abs(prev_day_open - prev_day_close) : manual_gap
+        float gap = gap_mode == "Automatic" ? math.abs(current_day_open - prev_day_close) : manual_gap
         float corrected_range = initial_range + gap
         float base_price = na
         if manual_price > 0
             base_price := manual_price
         else if nr2_level_type == "Current Day Open"
-            base_price := prev_day_open
+            base_price := current_day_open
         else
             base_price := prev_day_close
 
